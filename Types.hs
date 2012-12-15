@@ -15,7 +15,9 @@
 
 module Types
        ( GameState (..) 
-       , Object
+       , Object (..)
+       , drawObj
+       , handleObjEvent
        )
        where
 
@@ -68,22 +70,26 @@ handleObjEvent (SDL.MouseMotion x y _ _) obj
   | isObjEnabled obj =
     if wasMouseOver obj
     then
-      if isInRect (getObjGeom obj) (fromIntegral x) (fromIntegral y)
+      if isInObj obj x y
       then return obj
       else onMouseOut $ mouseWasNotOver obj
     else
-      if isInRect (getObjGeom obj) (fromIntegral x) (fromIntegral y)
+      if isInObj obj x y
       then onMouseOver $ mouseWasOver obj
       else return obj
   | otherwise = return obj
+
 handleObjEvent _ obj = return obj
 
-isInRect :: SDL.Rect -> Int -> Int -> Bool
+isInObj :: (Object o, Integral i) => o -> i -> i -> Bool
+isInObj obj x y = isInRect (getObjGeom obj) x y
+
+isInRect :: Integral i => SDL.Rect -> i -> i -> Bool
 isInRect (SDL.Rect rX rY w h) x y =
   x >= x1 && x <= x2 && y >= y1 && y <= y2
   where
-    x1 = fromIntegral rX :: Int
-    y1 = fromIntegral rY :: Int
+    x1 = fromIntegral rX
+    y1 = fromIntegral rY
     x2 = x1 + fromIntegral w
     y2 = y1 + fromIntegral h
 
