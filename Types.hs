@@ -13,31 +13,16 @@
 -- You should have received a copy of the GNU General Public License
 -- along with this program.  If not, see: http://www.gnu.org/licenses/
 
+module Types
+       ( GameState (..) 
+       )
+       where
+
 import qualified Graphics.UI.SDL as SDL
 import qualified System.Random as Rand
-import Types
 
-main = SDL.withInit [SDL.InitEverything] $
-       initGame >>= mainLoop >>= cleanUp
-
-initGame :: IO GameState
-initGame = do
-  s <- SDL.setVideoMode 640 480 32 [SDL.Fullscreen]
-  g <- Rand.getStdGen
-  return $ GameState { surface = s, gen = g }
-
-mainLoop :: GameState -> IO GameState
-mainLoop gs = do
-  drawScreen gs
-  SDL.pollEvent >>= logic gs
-
-drawScreen :: GameState -> IO ()
-drawScreen gs = undefined
-
-logic :: GameState -> SDL.Event -> IO GameState
-logic gs ev = undefined
-
-cleanUp :: GameState -> IO ()
-cleanUp = undefined
-
--- jl
+data GameState =
+  GameState
+  { surface :: SDL.Surface
+  , gen :: Rand.StdGen
+  }
