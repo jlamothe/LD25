@@ -48,38 +48,41 @@ class Object o where
   objIsPressed :: o -> o
   objNotPressed :: o -> o
   onDrawObj :: SDL.Surface -> o -> IO ()
-  onMouseOver :: o -> IO o
-  onMouseOut :: o -> IO o
-  onPress :: o -> IO o
-  onRelease :: o -> IO o
-  onClick :: o -> IO o
+  onMouseOver :: GameState -> o -> IO (GameState, o)
+  onMouseOut :: GameState -> o -> IO (GameState, o)
+  onPress :: GameState -> o -> IO (GameState, o)
+  onRelease :: GameState -> o -> IO (GameState, o)
+  onClick :: GameState -> o -> IO (GameState, o)
 
-  onMouseOver = return
-  onMouseOut = return
-  onPress = return
-  onRelease = return
-  onClick = return
+  onMouseOver gs obj = return (gs, obj)
+  onMouseOut gs obj = return (gs, obj)
+  onPress gs obj = return (gs, obj)
+  onRelease gs obj = return (gs, obj)
+  onClick gs obj = return (gs, obj)
 
 drawObj :: Object o => SDL.Surface -> o -> IO Bool
 drawObj surf obj
   | isObjVisible obj = onDrawObj surf obj >> return True
   | otherwise = return False
 
-handleObjEvent :: Object o => SDL.Event -> o -> IO o
-handleObjEvent (SDL.MouseMotion x y _ _) obj
+handleObjEvent :: Object o 
+                  => GameState 
+                  -> SDL.Event 
+                  -> o 
+                  -> IO (GameState, o)
+handleObjEvent gs (SDL.MouseMotion x y _ _) obj
   | isObjEnabled obj =
     if wasMouseOver obj
     then
       if isInObj obj x y
-      then return obj
-      else onMouseOut $ mouseWasNotOver obj
+      then return (gs, obj)
+      else onMouseOut gs $ mouseWasNotOver obj
     else
       if isInObj obj x y
-      then onMouseOver $ mouseWasOver obj
-      else return obj
-  | otherwise = return obj
-
-handleObjEvent _ obj = return obj
+      then onMouseOver gs $ mouseWasOver obj
+      else return (gs, obj)
+  | otherwise = return (gs, obj)
+handleObjEvent gs _ obj = return (gs, obj)
 
 isInObj :: (Object o, Integral i) => o -> i -> i -> Bool
 isInObj obj x y = isInRect (getObjGeom obj) x y
