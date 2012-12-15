@@ -82,6 +82,12 @@ handleObjEvent gs (SDL.MouseMotion x y _ _) obj
       then onMouseOver gs $ mouseWasOver obj
       else return (gs, obj)
   | otherwise = return (gs, obj)
+handleObjEvent gs (SDL.MouseButtonDown x y _) obj
+  | isObjEnabled obj =
+    if isInObj obj x y
+    then onPress gs $ objIsPressed obj
+    else return (gs, obj)
+  | otherwise = return (gs, obj)
 handleObjEvent gs _ obj = return (gs, obj)
 
 isInObj :: (Object o, Integral i) => o -> i -> i -> Bool
