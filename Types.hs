@@ -24,5 +24,6 @@ import qualified System.Random as Rand
 data GameState =
   GameState
   { surface :: SDL.Surface
+  , audio :: Bool
   , gen :: Rand.StdGen
-  }
+  } deriving Show

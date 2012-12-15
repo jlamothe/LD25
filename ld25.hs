@@ -13,8 +13,10 @@
 -- You should have received a copy of the GNU General Public License
 -- along with this program.  If not, see: http://www.gnu.org/licenses/
 
-import qualified Graphics.UI.SDL as SDL
+import Control.Monad
 import qualified System.Random as Rand
+import qualified Graphics.UI.SDL as SDL
+import qualified Graphics.UI.SDL.Mixer as Sound
 import Types
 
 main = SDL.withInit [SDL.InitEverything] $
@@ -23,8 +25,13 @@ main = SDL.withInit [SDL.InitEverything] $
 initGame :: IO GameState
 initGame = do
   s <- SDL.setVideoMode 640 480 32 [SDL.Fullscreen]
+  a <- Sound.tryOpenAudio
+       Sound.defaultFrequency
+       Sound.AudioS16Sys
+       2
+       1024
   g <- Rand.getStdGen
-  return $ GameState { surface = s, gen = g }
+  return $ GameState { surface = s, audio = a, gen = g }
 
 mainLoop :: GameState -> IO GameState
 mainLoop gs = do
@@ -35,9 +42,9 @@ drawScreen :: GameState -> IO ()
 drawScreen gs = undefined
 
 logic :: GameState -> SDL.Event -> IO GameState
-logic gs ev = undefined
+logic = undefined
 
 cleanUp :: GameState -> IO ()
-cleanUp = undefined
+cleanUp gs = when (audio gs) Sound.closeAudio
 
 -- jl
