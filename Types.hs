@@ -14,7 +14,7 @@
 -- along with this program.  If not, see: http://www.gnu.org/licenses/
 
 module Types
-       ( GameState (..) 
+       ( GameState (..)
        , Object (..)
        , drawObj
        , handleObjEvent
@@ -48,53 +48,53 @@ class Object o where
   objIsPressed :: o -> o
   objNotPressed :: o -> o
   onDrawObj :: SDL.Surface -> o -> IO ()
-  onMouseOver :: GameState -> o -> IO (GameState, o)
-  onMouseOut :: GameState -> o -> IO (GameState, o)
-  onPress :: GameState -> o -> IO (GameState, o)
-  onRelease :: GameState -> o -> IO (GameState, o)
-  onClick :: GameState -> o -> IO (GameState, o)
+  onMouseOver :: GameState -> o -> (GameState, o)
+  onMouseOut :: GameState -> o -> (GameState, o)
+  onPress :: GameState -> o -> (GameState, o)
+  onRelease :: GameState -> o -> (GameState, o)
+  onClick :: GameState -> o -> (GameState, o)
 
-  onMouseOver gs obj = return (gs, obj)
-  onMouseOut gs obj = return (gs, obj)
-  onPress gs obj = return (gs, obj)
-  onRelease gs obj = return (gs, obj)
-  onClick gs obj = return (gs, obj)
+  onMouseOver gs obj = (gs, obj)
+  onMouseOut gs obj = (gs, obj)
+  onPress gs obj = (gs, obj)
+  onRelease gs obj = (gs, obj)
+  onClick gs obj = (gs, obj)
 
 drawObj :: Object o => SDL.Surface -> o -> IO Bool
 drawObj surf obj
   | isObjVisible obj = onDrawObj surf obj >> return True
   | otherwise = return False
 
-handleObjEvent :: Object o 
-                  => GameState 
-                  -> SDL.Event 
-                  -> o 
-                  -> IO (GameState, o)
+handleObjEvent :: Object o
+                  => GameState
+                  -> SDL.Event
+                  -> o
+                  -> (GameState, o)
 handleObjEvent gs (SDL.MouseMotion x y _ _) obj
   | isObjEnabled obj =
     if wasMouseOver obj
     then
       if isInObj obj x y
-      then return (gs, obj)
+      then (gs, obj)
       else onMouseOut gs $ mouseWasNotOver obj
     else
       if isInObj obj x y
       then onMouseOver gs $ mouseWasOver obj
-      else return (gs, obj)
-  | otherwise = return (gs, obj)
+      else (gs, obj)
+  | otherwise = (gs, obj)
 handleObjEvent gs (SDL.MouseButtonDown x y _) obj
   | isObjEnabled obj =
     if isInObj obj x y
     then onPress gs $ objIsPressed obj
-    else return (gs, obj)
-  | otherwise = return (gs, obj)
+    else (gs, obj)
+  | otherwise = (gs, obj)
 handleObjEvent gs (SDL.MouseButtonUp x y _) obj
   | isObjEnabled obj && isObjPressed obj =
     if isInObj obj y x
     then onClick gs $ objNotPressed obj
     else onRelease gs $ objNotPressed obj
-  | otherwise = return (gs, obj)
-handleObjEvent gs _ obj = return (gs, obj)
+  | otherwise = (gs, obj)
+handleObjEvent gs _ obj = (gs, obj)
 
 isInObj :: (Object o, Integral i) => o -> i -> i -> Bool
 isInObj obj x y = isInRect (getObjGeom obj) x y
