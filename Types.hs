@@ -16,8 +16,9 @@
 module Types
        ( GameState (..)
        , Object (..)
-       , drawObj
-       , handleObjEvent
+       , objDraw
+       , Interactive (..)
+       , interHandleEvent
        )
        where
 
@@ -33,71 +34,91 @@ data GameState =
   } deriving Show
 
 class Object o where
-  getObjGeom :: o -> SDL.Rect
-  setObjGeom :: SDL.Rect -> o -> o
-  isObjVisible :: o -> Bool
-  objIsVisible :: o -> o
-  objIsInvisible :: o -> o
-  isObjEnabled :: o -> Bool
-  enableObj :: o -> o
-  disableObj :: o -> o
-  wasMouseOverObj :: o -> Bool
-  mouseWasOverObj :: o -> o
-  mouseWasNotOverObj :: o -> o
-  isObjPressed :: o -> Bool
-  objIsPressed :: o -> o
-  objNotPressed :: o -> o
-  onDrawObj :: SDL.Surface -> o -> IO ()
-  onMouseOverObj :: GameState -> o -> (GameState, o)
-  onMouseOutObj :: GameState -> o -> (GameState, o)
-  onPressObj :: GameState -> o -> (GameState, o)
-  onReleaseObj :: GameState -> o -> (GameState, o)
-  onClickObj :: GameState -> o -> (GameState, o)
+  objGetGeom :: o -> SDL.Rect
+  objSetGeom :: SDL.Rect -> o -> o
+  
+  objIsVisible :: o -> Bool
+  objIsVisible _ = True
+  
+  objSetVisible :: Bool -> o -> o
+  objSetVisible _ obj = obj
+  
+  objOnDraw :: SDL.Surface -> o -> IO ()
+  objOnDraw _ _ = return ()
 
-  onMouseOverObj gs obj = (gs, obj)
-  onMouseOutObj gs obj = (gs, obj)
-  onPressObj gs obj = (gs, obj)
-  onReleaseObj gs obj = (gs, obj)
-  onClickObj gs obj = (gs, obj)
-
-drawObj :: Object o => SDL.Surface -> o -> IO Bool
-drawObj surf obj
-  | isObjVisible obj = onDrawObj surf obj >> return True
+objDraw :: Object o => SDL.Surface -> o -> IO Bool
+objDraw surf obj
+  | objIsVisible obj = objOnDraw surf obj >> return True
   | otherwise = return False
 
-handleObjEvent :: Object o
-                  => GameState
-                  -> SDL.Event
-                  -> o
-                  -> (GameState, o)
-handleObjEvent gs (SDL.MouseMotion x y _ _) obj
-  | isObjEnabled obj =
-    if wasMouseOver obj
-    then
-      if isInObj obj x y
-      then (gs, obj)
-      else onMouseOutObj gs $ mouseWasNotOverObj obj
-    else
-      if isInObj obj x y
-      then onMouseOverObj gs $ mouseWasOverObj obj
-      else (gs, obj)
+class Object i => Interactive i where
+  interIsEnabled :: i -> Bool
+  interIsEnabled _ = True
+
+  interSetEnable :: Bool -> i -> i
+  interSetEnable _ obj = obj
+
+  interWasMouseOver :: i -> Maybe Bool
+  interWasMouseOver _ = Nothing
+
+  interSetMouseWasOver :: Bool -> i -> i
+  interSetMouseWasOver _ obj = obj
+
+  interIsPressed :: i -> Maybe Bool
+  interIsPressed obj = Nothing
+
+  interSetPressed :: Bool -> i -> i
+  interSetPressed _ obj = obj
+
+  interOnMouseOver :: GameState -> i -> (GameState, i)
+  interOnMouseOver gs obj = (gs, obj)
+  
+  interOnMouseOut :: GameState -> i -> (GameState, i)
+  interOnMouseOut gs obj = (gs, obj)
+  
+  interOnPress :: GameState -> i -> (GameState, i)
+  interOnPress gs obj = (gs, obj)
+  
+  interOnRelease :: GameState -> i -> (GameState, i)
+  interOnRelease gs obj = (gs, obj)
+  
+  interOnClick :: GameState -> i -> (GameState, i)
+  interOnClick gs obj = (gs, obj)
+
+interHandleEvent :: Interactive i
+                    => GameState
+                    -> SDL.Event
+                    -> i
+                    -> (GameState, i)
+interHandleEvent gs (SDL.MouseMotion x y _ _) obj
+  | interIsEnabled obj =
+    case interWasMouseOver obj of
+      Just True ->
+        if isInObj obj x y
+        then (gs, obj)
+        else interOnMouseOut gs $ interSetMouseWasOver False obj
+      Just False ->
+        if isInObj obj x y
+        then interOnMouseOver gs $ interSetMouseWasOver True obj
+        else (gs, obj)
+      Nothing -> (gs, obj)
   | otherwise = (gs, obj)
-handleObjEvent gs (SDL.MouseButtonDown x y _) obj
-  | isObjEnabled obj =
+interHandleEvent gs (SDL.MouseButtonDown x y _) obj
+  | interIsEnabled obj =
     if isInObj obj x y
-    then onPress gs $ objIsPressed obj
+    then interOnPress gs $ interSetPressed True obj
     else (gs, obj)
   | otherwise = (gs, obj)
-handleObjEvent gs (SDL.MouseButtonUp x y _) obj
-  | isObjEnabled obj && isObjPressed obj =
+interHandleEvent gs (SDL.MouseButtonUp x y _) obj
+  | interIsEnabled obj && interIsPressed obj == Just True =
     if isInObj obj y x
-    then onClick gs $ objNotPressed obj
-    else onRelease gs $ objNotPressed obj
+    then interOnClick gs $ interSetPressed False obj
+    else interOnRelease gs $ interSetPressed False obj
   | otherwise = (gs, obj)
-handleObjEvent gs _ obj = (gs, obj)
+interHandleEvent gs _ obj = (gs, obj)
 
 isInObj :: (Object o, Integral i) => o -> i -> i -> Bool
-isInObj obj x y = isInRect (getObjGeom obj) x y
+isInObj obj x y = isInRect (objGetGeom obj) x y
 
 isInRect :: Integral i => SDL.Rect -> i -> i -> Bool
 isInRect (SDL.Rect rX rY w h) x y =
