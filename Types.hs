@@ -22,6 +22,7 @@ module Types
        )
        where
 
+import qualified Data.Map as Map
 import Control.Monad
 import qualified Graphics.UI.SDL as SDL
 import qualified System.Random as Rand
@@ -31,18 +32,27 @@ data GameState =
   { surface :: SDL.Surface
   , audio :: Bool
   , gen :: Rand.StdGen
+  , playerPos :: Position
+  , playerTile :: SDL.Surface
+  , grassTile :: SDL.Surface
+  , bldgTile :: SDL.Surface
+  , roadIntTile :: SDL.Surface
+  , roadHorizTile :: SDL.Surface
+  , roadVertTile :: SDL.Surface
   } deriving Show
+
+type Position = (Int, Int)
 
 class Object o where
   objGetGeom :: o -> SDL.Rect
   objSetGeom :: SDL.Rect -> o -> o
-  
+
   objIsVisible :: o -> Bool
   objIsVisible _ = True
-  
+
   objSetVisible :: Bool -> o -> o
   objSetVisible _ obj = obj
-  
+
   objOnDraw :: SDL.Surface -> o -> IO ()
   objOnDraw _ _ = return ()
 
@@ -72,16 +82,16 @@ class Object i => Interactive i where
 
   interOnMouseOver :: GameState -> i -> (GameState, i)
   interOnMouseOver gs obj = (gs, obj)
-  
+
   interOnMouseOut :: GameState -> i -> (GameState, i)
   interOnMouseOut gs obj = (gs, obj)
-  
+
   interOnPress :: GameState -> i -> (GameState, i)
   interOnPress gs obj = (gs, obj)
-  
+
   interOnRelease :: GameState -> i -> (GameState, i)
   interOnRelease gs obj = (gs, obj)
-  
+
   interOnClick :: GameState -> i -> (GameState, i)
   interOnClick gs obj = (gs, obj)
 

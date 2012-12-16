@@ -16,6 +16,7 @@
 import Control.Monad
 import qualified System.Random as Rand
 import qualified Graphics.UI.SDL as SDL
+import qualified Graphics.UI.SDL.Image as SDLi
 import qualified Graphics.UI.SDL.Mixer as Sound
 import Types
 
@@ -31,7 +32,57 @@ initGame = do
        2
        1024
   g <- Rand.getStdGen
-  return $ GameState { surface = s, audio = a, gen = g }
+  pt <- SDLi.load "art/villain.png"
+  gt <- genGrassTile
+  bt <- genBldgTile
+  rit <- genRoadIntTile
+  rht <- genRoadHorizTile
+  rvt <- genRoadVertTile
+  return $ GameState { surface = s
+                     , audio = a
+                     , gen = g
+                     , playerPos = (0, 0)
+                     , playerTile = pt
+                     , grassTile = gt
+                     , bldgTile = bt
+                     , roadIntTile = rit
+                     , roadHorizTile = rht
+                     , roadVertTile = rvt
+                     }
+
+genGrassTile :: IO SDL.Surface
+genGrassTile = genSolidTile 0 0 0x7f
+
+genBldgTile :: IO SDL.Surface
+genBldgTile = genSolidTile 0xc0 0xc0 0xc0
+
+genRoadIntTile :: IO SDL.Surface
+genRoadIntTile = genSolidTile 0x3f 0x3f 0x3f
+
+genRoadHorizTile :: IO SDL.Surface
+genRoadHorizTile = do
+  s <- genRoadIntTile
+  p <- SDL.mapRGB (SDL.surfaceGetPixelFormat s) 0xff 0xff 0
+  SDL.fillRect s (Just $ SDL.Rect 4 8 8 1) p
+  return s
+
+genRoadVertTile :: IO SDL.Surface
+genRoadVertTile = do
+  s <- genRoadIntTile
+  p <- SDL.mapRGB (SDL.surfaceGetPixelFormat s) 0xff 0xff 0
+  SDL.fillRect s (Just $ SDL.Rect 8 4 1 8) p
+  return s
+
+genSolidTile :: Integral i => i -> i -> i -> IO SDL.Surface
+genSolidTile r g b = do
+  s <- SDL.createRGBSurfaceEndian [] 16 16 32
+  p <- SDL.mapRGB (SDL.surfaceGetPixelFormat s) r' g' b'
+  SDL.fillRect s Nothing p
+  return s
+  where
+    r' = fromIntegral r
+    g' = fromIntegral g
+    b' = fromIntegral b
 
 mainLoop :: GameState -> IO GameState
 mainLoop gs = do
@@ -39,7 +90,16 @@ mainLoop gs = do
   SDL.pollEvent >>= logic gs
 
 drawScreen :: GameState -> IO ()
-drawScreen gs = undefined
+drawScreen gs = do
+  drawMap gs
+  drawSprites gs
+  SDL.flip $ surface gs
+
+drawMap :: GameState -> IO ()
+drawMap = undefined
+
+drawSprites :: GameState -> IO ()
+drawSprites = undefined
 
 logic :: GameState -> SDL.Event -> IO GameState
 logic = undefined
