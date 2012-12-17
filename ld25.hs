@@ -55,7 +55,7 @@ genGrassTile :: IO SDL.Surface
 genGrassTile = genSolidTile 0 0x7f 0
 
 genBldgTile :: IO SDL.Surface
-genBldgTile = genSolidTile 0xc0 0xc0 0xc0
+genBldgTile = genSolidTile 0x7f 0x7f 0x7f
 
 genRoadIntTile :: IO SDL.Surface
 genRoadIntTile = genSolidTile 0x3f 0x3f 0x3f
@@ -174,32 +174,43 @@ logic gs _ = gs
 
 
 moveUp :: GameState -> GameState
-moveUp gs = gs { playerPos = (x', y') }
+moveUp gs = if isValidPos x' y'
+            then gs { playerPos = (x', y') }
+            else gs
   where
     x' = x
     y' = y - 1
     (x, y) = playerPos gs
 
 moveDown :: GameState -> GameState
-moveDown gs = gs { playerPos = (x', y') }
+moveDown gs = if isValidPos x' y'
+              then gs { playerPos = (x', y') }
+              else gs
   where
     x' = x
     y' = y + 1
     (x, y) = playerPos gs
 
 moveLeft :: GameState -> GameState
-moveLeft gs = gs { playerPos = (x', y') }
+moveLeft gs = if isValidPos x' y'
+              then gs { playerPos = (x', y') }
+              else gs
   where
     x' = x - 1
     y' = y
     (x, y) = playerPos gs
 
 moveRight :: GameState -> GameState
-moveRight gs = gs { playerPos = (x', y') }
+moveRight gs = if isValidPos x' y'
+               then gs { playerPos = (x', y') }
+               else gs
   where
     x' = x + 1
     y' = y
     (x, y) = playerPos gs
+
+isValidPos :: Integral i => i -> i -> Bool
+isValidPos x y = x `mod` 3 == 0 || y `mod` 3 == 0
 
 cleanUp :: GameState -> IO ()
 cleanUp gs = when (audio gs) Sound.closeAudio
