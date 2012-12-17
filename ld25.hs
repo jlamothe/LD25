@@ -51,7 +51,7 @@ initGame = do
                      }
 
 genGrassTile :: IO SDL.Surface
-genGrassTile = genSolidTile 0 0 0x7f
+genGrassTile = genSolidTile 0 0x7f 0
 
 genBldgTile :: IO SDL.Surface
 genBldgTile = genSolidTile 0xc0 0xc0 0xc0
@@ -96,10 +96,60 @@ drawScreen gs = do
   SDL.flip $ surface gs
 
 drawMap :: GameState -> IO ()
-drawMap = undefined
+drawMap gs = mapM_ (drawMapRow gs) [(-15) .. 15]
+
+drawMapRow :: Integral i => GameState -> i -> IO ()
+drawMapRow gs y = mapM_ (flip (drawMapTile gs) y) [(-20) .. 20]
+
+drawMapTile :: Integral i => GameState -> i -> i -> IO ()
+drawMapTile gs x y =
+  SDL.blitSurface tile Nothing (surface gs) (Just rect) >> return ()
+  where
+    tile = getRelMapTile gs x y
+    rect = getMapRect x y
+
+getRelMapTile :: Integral i => GameState -> i -> i -> SDL.Surface
+getRelMapTile gs x y =
+  getAbsMapTile gs x' y'
+  where
+    x' = fromIntegral pX + x
+    y' = fromIntegral pY + y
+    (pX, pY) = playerPos gs
+
+getAbsMapTile :: Integral i => GameState -> i -> i -> SDL.Surface
+getAbsMapTile gs x y =
+  if x `mod` 6 == 0
+  then
+    if y `mod` 6 == 0
+    then roadIntTile gs
+    else roadVertTile gs
+  else
+    if y `mod` 6 == 0
+    then roadHorizTile gs
+    else
+      if x `mod` 3 == 0 || y `mod` 3 == 0
+      then grassTile gs
+      else bldgTile gs
+
+getMapRect :: Integral i => i -> i -> SDL.Rect
+getMapRect x y = SDL.Rect x' y' 16 16
+  where
+    x' = fromIntegral $ originX + 16 * x
+    y' = fromIntegral $ originY + 16 * y
+
+originX :: Integral i => i
+originX = (640 - 16) `div` 2
+
+originY :: Integral i => i
+originY = (480 - 16) `div` 2
 
 drawSprites :: GameState -> IO ()
-drawSprites = undefined
+drawSprites gs =
+  SDL.blitSurface tile Nothing surf origin >> return ()
+  where
+    tile = playerTile gs
+    surf = surface gs
+    origin = Just $ getMapRect 0 0
 
 logic :: GameState -> SDL.Event -> IO GameState
 logic = undefined
