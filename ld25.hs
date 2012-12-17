@@ -38,18 +38,21 @@ initGame = do
   rit <- genRoadIntTile
   rht <- genRoadHorizTile
   rvt <- genRoadVertTile
-  return $ GameState { surface = s
-                     , audio = a
-                     , gen = g
-                     , playerPos = (0, 0)
-                     , playerTile = pt
-                     , grassTile = gt
-                     , bldgTile = bt
-                     , roadIntTile = rit
-                     , roadHorizTile = rht
-                     , roadVertTile = rvt
-                     , gameOver = False
-                     }
+  op <- SDLi.load "art/orphanage.png"
+  return GameState { surface = s
+                   , audio = a
+                   , gen = g
+                   , playerPos = (0, 0)
+                   , playerTile = pt
+                   , grassTile = gt
+                   , bldgTile = bt
+                   , roadIntTile = rit
+                   , roadHorizTile = rht
+                   , roadVertTile = rvt
+                   , orphanagePic = op
+                   , orphanageObj = Orphanage (0, 0) NorthWest
+                   , gameOver = False
+                   }
 
 genGrassTile :: IO SDL.Surface
 genGrassTile = genSolidTile 0 0x7f 0
@@ -108,7 +111,7 @@ drawMapRow gs y = mapM_ (flip (drawMapTile gs) y) [(-20) .. 20]
 
 drawMapTile :: Integral i => GameState -> i -> i -> IO ()
 drawMapTile gs x y =
-  SDL.blitSurface tile Nothing (surface gs) (Just rect) >> return ()
+  void $ SDL.blitSurface tile Nothing (surface gs) (Just rect)
   where
     tile = getRelMapTile gs x y
     rect = getMapRect x y
@@ -136,25 +139,55 @@ getAbsMapTile gs x y =
       then grassTile gs
       else bldgTile gs
 
-getMapRect :: Integral i => i -> i -> SDL.Rect
-getMapRect x y = SDL.Rect x' y' 16 16
-  where
-    x' = fromIntegral $ originX + 16 * x
-    y' = fromIntegral $ originY + 16 * y
-
-originX :: Integral i => i
-originX = (640 - 16) `div` 2
-
-originY :: Integral i => i
-originY = (480 - 16) `div` 2
-
 drawSprites :: GameState -> IO ()
-drawSprites gs =
-  SDL.blitSurface tile Nothing surf origin >> return ()
+drawSprites gs = do
+  drawPlayerSprite gs
+  drawOrphanage gs
+
+drawPlayerSprite :: GameState -> IO ()
+drawPlayerSprite gs =
+  void $ SDL.blitSurface tile Nothing surf (Just origin)
   where
     tile = playerTile gs
     surf = surface gs
-    origin = Just $ getMapRect 0 0
+    origin = getMapRect 0 0
+
+drawOrphanage :: GameState -> IO ()
+drawOrphanage gs = 
+  void $ SDL.blitSurface img Nothing surf (Just rect)
+  where
+    img = orphanagePic gs
+    surf = surface gs
+    rect = getOrphanageRect gs
+
+getOrphanageRect :: GameState -> SDL.Rect
+getOrphanageRect gs = getBldgRect gs pos corner
+  where
+    pos = orphanPos orphanage
+    corner = orphanCorner orphanage
+    orphanage = orphanageObj gs
+
+getBldgRect :: GameState -> Position -> Corner -> SDL.Rect
+getBldgRect gs pos corner = SDL.Rect x' y' 32 32
+  where
+    x' = fromIntegral $ x * 16 + originX
+    y' = fromIntegral $ y * 16 + originY
+    (x, y) = getRelBldgPos gs pos corner
+
+getRelBldgPos :: GameState -> Position -> Corner -> Position
+getRelBldgPos gs pos corner = (x', y')
+  where
+    x' = x - pX
+    y' = y - pY
+    (x, y) = getAbsBldgPos pos corner
+    (pX, pY) = playerPos gs
+
+getAbsBldgPos :: Position -> Corner -> Position
+getAbsBldgPos (x, y) corner    
+  | corner == NorthWest = (x * 6 - 2, y * 6 - 2)
+  | corner == NorthEast = (x * 6 + 1, y * 6 - 2)
+  | corner == SouthWest = (x * 6 - 2, y * 6 + 1)
+  | corner == SouthEast = (x * 6 + 1, y * 6 + 1)
 
 logic :: GameState -> SDL.Event -> GameState
 logic gs (SDL.KeyDown k) = case SDL.symKey k of

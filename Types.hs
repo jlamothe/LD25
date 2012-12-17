@@ -15,10 +15,16 @@
 
 module Types
        ( GameState (..)
+       , Position
+       , Orphanage (..)
+       , Corner (..)
        , Object (..)
        , objDraw
        , Interactive (..)
        , interHandleEvent
+       , getMapRect
+       , originX
+       , originY
        )
        where
 
@@ -39,14 +45,25 @@ data GameState =
   , roadIntTile :: SDL.Surface
   , roadHorizTile :: SDL.Surface
   , roadVertTile :: SDL.Surface
+  , orphanagePic :: SDL.Surface
+  , orphanageObj :: Orphanage
   , gameOver :: Bool
   } deriving Show
 
 type Position = (Int, Int)
 
+data Orphanage =
+  Orphanage
+  { orphanPos :: Position
+  , orphanCorner :: Corner
+  } deriving Show
+
+data Corner =
+  NorthWest | NorthEast | SouthWest | SouthEast
+  deriving (Eq, Show)
+
 class Object o where
-  objGetGeom :: o -> SDL.Rect
-  objSetGeom :: SDL.Rect -> o -> o
+  objGetGeom :: GameState -> o -> SDL.Rect
 
   objIsVisible :: o -> Bool
   objIsVisible _ = True
@@ -105,31 +122,31 @@ interHandleEvent gs (SDL.MouseMotion x y _ _) obj
   | interIsEnabled obj =
     case interWasMouseOver obj of
       Just True ->
-        if isInObj obj x y
+        if isInObj gs obj x y
         then (gs, obj)
         else interOnMouseOut gs $ interSetMouseWasOver False obj
       Just False ->
-        if isInObj obj x y
+        if isInObj gs obj x y
         then interOnMouseOver gs $ interSetMouseWasOver True obj
         else (gs, obj)
       Nothing -> (gs, obj)
   | otherwise = (gs, obj)
 interHandleEvent gs (SDL.MouseButtonDown x y _) obj
   | interIsEnabled obj =
-    if isInObj obj x y
+    if isInObj gs obj x y
     then interOnPress gs $ interSetPressed True obj
     else (gs, obj)
   | otherwise = (gs, obj)
 interHandleEvent gs (SDL.MouseButtonUp x y _) obj
   | interIsEnabled obj && interIsPressed obj == Just True =
-    if isInObj obj y x
+    if isInObj gs obj y x
     then interOnClick gs $ interSetPressed False obj
     else interOnRelease gs $ interSetPressed False obj
   | otherwise = (gs, obj)
 interHandleEvent gs _ obj = (gs, obj)
 
-isInObj :: (Object o, Integral i) => o -> i -> i -> Bool
-isInObj obj x y = isInRect (objGetGeom obj) x y
+isInObj :: (Object o, Integral i) => GameState -> o -> i -> i -> Bool
+isInObj gs obj x y = isInRect (objGetGeom gs obj) x y
 
 isInRect :: Integral i => SDL.Rect -> i -> i -> Bool
 isInRect (SDL.Rect rX rY w h) x y =
@@ -139,5 +156,17 @@ isInRect (SDL.Rect rX rY w h) x y =
     y1 = fromIntegral rY
     x2 = x1 + fromIntegral w
     y2 = y1 + fromIntegral h
+
+getMapRect :: Integral i => i -> i -> SDL.Rect
+getMapRect x y = SDL.Rect x' y' 16 16
+  where
+    x' = fromIntegral $ originX + 16 * x
+    y' = fromIntegral $ originY + 16 * y
+
+originX :: Integral i => i
+originX = (640 - 16) `div` 2
+
+originY :: Integral i => i
+originY = (480 - 16) `div` 2
 
 -- jl
