@@ -39,6 +39,7 @@ data GameState =
   , roadIntTile :: SDL.Surface
   , roadHorizTile :: SDL.Surface
   , roadVertTile :: SDL.Surface
+  , gameOver :: Bool
   } deriving Show
 
 type Position = (Int, Int)

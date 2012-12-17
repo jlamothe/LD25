@@ -48,6 +48,7 @@ initGame = do
                      , roadIntTile = rit
                      , roadHorizTile = rht
                      , roadVertTile = rvt
+                     , gameOver = False
                      }
 
 genGrassTile :: IO SDL.Surface
@@ -87,7 +88,11 @@ genSolidTile r g b = do
 mainLoop :: GameState -> IO GameState
 mainLoop gs = do
   drawScreen gs
-  SDL.pollEvent >>= logic gs
+  event <- SDL.pollEvent
+  let gs' = logic gs event
+  if gameOver gs'
+    then return gs'
+    else mainLoop gs'
 
 drawScreen :: GameState -> IO ()
 drawScreen gs = do
@@ -151,8 +156,50 @@ drawSprites gs =
     surf = surface gs
     origin = Just $ getMapRect 0 0
 
-logic :: GameState -> SDL.Event -> IO GameState
-logic = undefined
+logic :: GameState -> SDL.Event -> GameState
+logic gs (SDL.KeyDown k) = case SDL.symKey k of
+  SDL.SDLK_UP -> moveUp gs
+  SDL.SDLK_k -> moveUp gs
+  SDL.SDLK_DOWN -> moveDown gs
+  SDL.SDLK_j -> moveDown gs
+  SDL.SDLK_LEFT -> moveLeft gs
+  SDL.SDLK_h -> moveLeft gs
+  SDL.SDLK_RIGHT -> moveRight gs
+  SDL.SDLK_l -> moveRight gs
+  SDL.SDLK_ESCAPE -> gs { gameOver = True }
+  SDL.SDLK_q -> gs { gameOver = True }
+  _ -> gs
+logic gs SDL.Quit = gs { gameOver = True }
+logic gs _ = gs
+
+
+moveUp :: GameState -> GameState
+moveUp gs = gs { playerPos = (x', y') }
+  where
+    x' = x
+    y' = y - 1
+    (x, y) = playerPos gs
+
+moveDown :: GameState -> GameState
+moveDown gs = gs { playerPos = (x', y') }
+  where
+    x' = x
+    y' = y + 1
+    (x, y) = playerPos gs
+
+moveLeft :: GameState -> GameState
+moveLeft gs = gs { playerPos = (x', y') }
+  where
+    x' = x - 1
+    y' = y
+    (x, y) = playerPos gs
+
+moveRight :: GameState -> GameState
+moveRight gs = gs { playerPos = (x', y') }
+  where
+    x' = x + 1
+    y' = y
+    (x, y) = playerPos gs
 
 cleanUp :: GameState -> IO ()
 cleanUp gs = when (audio gs) Sound.closeAudio
