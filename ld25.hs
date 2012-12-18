@@ -50,7 +50,7 @@ initGame = do
                    , roadHorizTile = rht
                    , roadVertTile = rvt
                    , orphanagePic = op
-                   , orphanageObj = Orphanage (0, 0) NorthWest
+                   , orphanage = Orphanage $ BldgPos (0, 0) NorthWest
                    , gameOver = False
                    }
 
@@ -163,9 +163,8 @@ drawOrphanage gs =
 getOrphanageRect :: GameState -> SDL.Rect
 getOrphanageRect gs = getBldgRect gs pos corner
   where
-    pos = orphanPos orphanage
-    corner = orphanCorner orphanage
-    orphanage = orphanageObj gs
+    pos = bldgIntersection $ orphanPos $ orphanage gs
+    corner = bldgCorner $ orphanPos $ orphanage gs
 
 getBldgRect :: GameState -> Position -> Corner -> SDL.Rect
 getBldgRect gs pos corner = SDL.Rect x' y' 32 32

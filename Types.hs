@@ -17,6 +17,7 @@ module Types
        ( GameState (..)
        , Position
        , Orphanage (..)
+       , BldgPos (..)
        , Corner (..)
        , Object (..)
        , objDraw
@@ -46,7 +47,7 @@ data GameState =
   , roadHorizTile :: SDL.Surface
   , roadVertTile :: SDL.Surface
   , orphanagePic :: SDL.Surface
-  , orphanageObj :: Orphanage
+  , orphanage :: Orphanage
   , gameOver :: Bool
   } deriving Show
 
@@ -54,8 +55,13 @@ type Position = (Int, Int)
 
 data Orphanage =
   Orphanage
-  { orphanPos :: Position
-  , orphanCorner :: Corner
+  { orphanPos :: BldgPos
+  } deriving Show
+
+data BldgPos =
+  BldgPos
+  { bldgIntersection :: Position
+  , bldgCorner :: Corner
   } deriving Show
 
 data Corner =
